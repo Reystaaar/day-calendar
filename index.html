@@ -3,18 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Day Calendar - Auto</title>
+    <title>Day Calendar - Time Flow</title>
     <style>
         :root {
             --bg-color: #000000;
-            --active-red: #ff3b30;
-            --shiny-past: #2c2c2e;
-            --border-dim: #3a3a3c;
-            --glow: rgba(255, 255, 255, 0.15);
+            
+            /* --- TES NOUVELLES COULEURS --- */
+            --past-color: #ffffff;   /* BLANC (Passé) */
+            --active-red: #ff3b30;   /* ROUGE (Présent) */
+            --future-color: #333333; /* GRIS (Futur) */
+            
+            --border-dim: #1c1c1e;
         }
 
         body {
-            background-color: #000;
+            background-color: var(--bg-color);
             color: #fff;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
@@ -24,7 +27,7 @@
             min-height: 100vh;
         }
 
-        /* --- MODE ACCUEIL (UI) --- */
+        /* --- INTERFACE D'ACCUEIL --- */
         #ui-layer {
             max-width: 600px;
             padding: 40px 20px;
@@ -32,7 +35,7 @@
             z-index: 10;
         }
 
-        h1 { font-size: 28px; font-weight: 700; margin-bottom: 10px; }
+        h1 { font-size: 28px; font-weight: 800; margin-bottom: 10px; letter-spacing: -0.5px; }
         p { color: #888; line-height: 1.5; margin-bottom: 30px; }
 
         .step-box {
@@ -54,6 +57,7 @@
             border-radius: 50%;
             font-weight: bold;
             margin-right: 10px;
+            line-height: 24px;
         }
 
         select {
@@ -65,17 +69,17 @@
             color: white;
             border: 1px solid #444;
             margin-top: 10px;
-            appearance: none; /* Style iOS */
+            appearance: none;
         }
 
         .url-box {
             background: #000;
-            border: 1px dashed #555;
+            border: 1px dashed #666;
             padding: 15px;
             border-radius: 8px;
             word-break: break-all;
             font-family: monospace;
-            color: #0f0;
+            color: var(--active-red);
             margin-top: 10px;
             font-size: 12px;
             cursor: pointer;
@@ -90,7 +94,7 @@
             position: absolute;
             top: 0;
             left: 0;
-            align-items: flex-start; /* Alignement haut pour laisser place horloge */
+            align-items: flex-start;
             justify-content: center;
         }
 
@@ -98,36 +102,44 @@
             display: grid;
             grid-template-columns: repeat(6, 1fr);
             gap: 12px;
-            width: 85%; 
-            /* Padding dynamique géré par JS selon le modèle */
-            padding-top: 150px; 
+            width: 85%;
+            padding-top: 150px; /* Espace pour l'heure par défaut */
         }
 
         .box {
             width: 100%;
             aspect-ratio: 1;
-            border: 1px solid var(--border-dim);
-            border-radius: 6px;
+            border-radius: 4px;
             transition: all 0.3s ease;
-            background: transparent;
+            
+            /* PAR DÉFAUT = FUTUR (GRIS) */
+            background-color: var(--future-color); 
+            border: 1px solid var(--future-color);
         }
 
-        /* --- ESTHÉTIQUE "BRILLANT" & ROUGE --- */
+        /* --- ÉTATS --- */
         
-        /* Heures passées : Effet "Glossy" / Brillant */
+        /* 1. PASSÉ = BLANC BRILLANT */
         .box.past {
-            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 50%, rgba(255,255,255,0) 100%);
-            border-color: rgba(255,255,255,0.3);
-            box-shadow: inset 0 0 8px rgba(255,255,255,0.05);
+            background-color: var(--past-color);
+            border-color: var(--past-color);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3); /* Léger halo blanc */
         }
 
-        /* Heure actuelle : Rouge Vif */
+        /* 2. PRÉSENT = ROUGE */
         .box.current {
             background-color: var(--active-red);
             border-color: var(--active-red);
             box-shadow: 0 0 25px rgba(255, 59, 48, 0.6);
-            transform: scale(1.02);
+            transform: scale(1.05);
             z-index: 2;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
         }
 
         /* Helper pour cacher l'UI quand on génère */
@@ -140,10 +152,10 @@
 
     <div id="ui-layer">
         <h1>Day Calendar</h1>
-        <p>Transformez votre fond d'écran en jauge de journée.<br>Mise à jour toutes les 30 minutes.</p>
+        <p>Visualisez le temps qui passe.<br>Blanc = Passé. Rouge = Maintenant. Gris = Futur.</p>
 
         <div class="step-box">
-            <div><span class="step-num">1</span> Choisissez votre iPhone</div>
+            <div><span class="step-num">1</span> Modèle d'iPhone</div>
             <select id="modelSelect" onchange="generateLink()">
                 <option value="iphone12">iPhone 12 / 13 / 14 (6.1")</option>
                 <option value="iphone14pro">iPhone 14/15/16 Pro</option>
@@ -153,112 +165,6 @@
         </div>
 
         <div class="step-box">
-            <div><span class="step-num">2</span> Configurez le Raccourci</div>
-            <p style="font-size: 13px; margin-bottom: 10px;">
-                Copiez le lien ci-dessous. Dans l'app Raccourcis, utilisez l'action <strong>"Obtenir le contenu de l'URL"</strong> (en mode Page Web) puis <strong>"Définir le fond d'écran"</strong>.
-            </p>
-            <div class="url-box" id="generatedLink" onclick="copyLink()">
-                </div>
-            <div id="copyMsg" style="color: #4cd964; font-size:12px; height:20px; margin-top:5px;"></div>
-        </div>
-        
-        <p style="font-size: 12px; color: #555;">Projet Open Source hébergé sur GitHub Pages.</p>
-    </div>
-
-    <div id="render-layer">
-        <div class="grid" id="dayGrid"></div>
-    </div>
-
-    <script>
-        // --- CONFIGURATION DES TAILLES ---
-        // Padding-top pour laisser la place à l'heure selon le modèle
-        const configs = {
-            'iphone12': '150px',
-            'iphone14pro': '165px',
-            'iphonemax': '170px',
-            'iphonese': '100px'
-        };
-
-        const uiLayer = document.getElementById('ui-layer');
-        const renderLayer = document.getElementById('render-layer');
-        const grid = document.getElementById('dayGrid');
-        const linkBox = document.getElementById('generatedLink');
-
-        // --- 1. DÉTECTION DU MODE (URL) ---
-        function checkMode() {
-            const params = new URLSearchParams(window.location.search);
-            const model = params.get('model');
-            const mode = params.get('mode');
-
-            if (mode === 'wallpaper' && model) {
-                // On passe en mode "Génération d'image"
-                document.body.classList.add('mode-wallpaper');
-                applyConfig(model);
-                initGrid();
-                updateTime(); // Mise à jour immédiate
-            } else {
-                // On reste en mode "Accueil"
-                generateLink(); // Génère le lien par défaut au chargement
-            }
-        }
-
-        // --- 2. LOGIQUE DU CALENDRIER ---
-        function applyConfig(modelKey) {
-            const padTop = configs[modelKey] || '150px';
-            grid.style.paddingTop = padTop;
-        }
-
-        function initGrid() {
-            grid.innerHTML = '';
-            for (let i = 0; i < 48; i++) {
-                const box = document.createElement('div');
-                box.className = 'box';
-                box.id = `box-${i}`;
-                grid.appendChild(box);
-            }
-        }
-
-        function updateTime() {
-            const now = new Date();
-            const currentHour = now.getHours();
-            const currentMinute = now.getMinutes();
-            const currentIndex = (currentHour * 2) + (currentMinute >= 30 ? 1 : 0);
-
-            for (let i = 0; i < 48; i++) {
-                const box = document.getElementById(`box-${i}`);
-                if (!box) return;
-
-                // Reset
-                box.className = 'box';
-
-                if (i < currentIndex) {
-                    box.classList.add('past'); // Brillant
-                } else if (i === currentIndex) {
-                    box.classList.add('current'); // Rouge
-                }
-            }
-        }
-
-        // --- 3. LOGIQUE UI (GÉNÉRATEUR DE LIEN) ---
-        function generateLink() {
-            const model = document.getElementById('modelSelect').value;
-            // On prend l'URL actuelle de la page (ex: ton-site.github.io)
-            const baseUrl = window.location.href.split('?')[0];
-            const fullUrl = `${baseUrl}?mode=wallpaper&model=${model}`;
-            linkBox.innerText = fullUrl;
-        }
-
-        function copyLink() {
-            const url = linkBox.innerText;
-            navigator.clipboard.writeText(url).then(() => {
-                document.getElementById('copyMsg').innerText = "Lien copié !";
-                setTimeout(() => document.getElementById('copyMsg').innerText = "", 2000);
-            });
-        }
-
-        // Initialisation
-        checkMode();
-
-    </script>
-</body>
-</html>
+            <div><span class="step-num">2</span> Lien pour Raccourci</div>
+            <p style="font-size: 13px; margin-bottom: 10px; color: #aaa;">
+                Copiez ce lien. Dans Raccourcis, utilisez l'action "Obtenir le contenu de l'
