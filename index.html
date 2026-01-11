@@ -167,4 +167,101 @@
         <div class="step-box">
             <div><span class="step-num">2</span> Lien pour Raccourci</div>
             <p style="font-size: 13px; margin-bottom: 10px; color: #aaa;">
-                Copiez ce lien. Dans Raccourcis, utilisez l'action "Obtenir le contenu de l'
+                Copiez ce lien. Dans Raccourcis, utilisez l'action "Obtenir le contenu de l'URL".
+            </p>
+            <div class="url-box" id="generatedLink" onclick="copyLink()">
+                Chargement...
+            </div>
+            <div id="copyMsg" style="color: var(--active-red); font-size:12px; height:20px; margin-top:5px; font-weight:bold;"></div>
+        </div>
+    </div>
+
+    <div id="render-layer">
+        <div class="grid" id="dayGrid"></div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const configs = {
+            'iphone12': '150px',
+            'iphone14pro': '165px',
+            'iphonemax': '170px',
+            'iphonese': '100px'
+        };
+
+        const uiLayer = document.getElementById('ui-layer');
+        const renderLayer = document.getElementById('render-layer');
+        const grid = document.getElementById('dayGrid');
+        const linkBox = document.getElementById('generatedLink');
+
+        function checkMode() {
+            const params = new URLSearchParams(window.location.search);
+            const model = params.get('model');
+            const mode = params.get('mode');
+
+            if (mode === 'wallpaper' && model) {
+                document.body.classList.add('mode-wallpaper');
+                applyConfig(model);
+                initGrid();
+                updateTime();
+            } else {
+                generateLink();
+            }
+        }
+
+        function applyConfig(modelKey) {
+            const padTop = configs[modelKey] || '150px';
+            grid.style.paddingTop = padTop;
+        }
+
+        function initGrid() {
+            grid.innerHTML = '';
+            for (let i = 0; i < 48; i++) {
+                const box = document.createElement('div');
+                box.className = 'box'; // Par défaut, c'est gris (défini dans le CSS)
+                box.id = `box-${i}`;
+                grid.appendChild(box);
+            }
+        }
+
+        function updateTime() {
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+            const currentIndex = (currentHour * 2) + (currentMinute >= 30 ? 1 : 0);
+
+            for (let i = 0; i < 48; i++) {
+                const box = document.getElementById(`box-${i}`);
+                if (!box) return;
+
+                // On nettoie les classes d'état
+                box.classList.remove('past', 'current');
+
+                if (i < currentIndex) {
+                    box.classList.add('past'); // Deviendra Blanc
+                } else if (i === currentIndex) {
+                    box.classList.add('current'); // Deviendra Rouge
+                }
+                // Si i > currentIndex, on ne met rien, donc ça reste la classe de base .box (Gris)
+            }
+        }
+
+        function generateLink() {
+            const model = document.getElementById('modelSelect').value;
+            const baseUrl = window.location.href.split('?')[0];
+            const fullUrl = `${baseUrl}?mode=wallpaper&model=${model}`;
+            linkBox.innerText = fullUrl;
+        }
+
+        function copyLink() {
+            const url = linkBox.innerText;
+            navigator.clipboard.writeText(url).then(() => {
+                document.getElementById('copyMsg').innerText = "COPIÉ !";
+                setTimeout(() => document.getElementById('copyMsg').innerText = "", 2000);
+            });
+        }
+
+        checkMode();
+    </script>
+</body>
+</html>
